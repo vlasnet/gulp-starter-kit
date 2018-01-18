@@ -9,6 +9,10 @@ const del = require('del');
 const htmlmin = require('gulp-htmlmin');
 const imagemin = require('gulp-imagemin');
 const rigger = require('gulp-rigger');
+const babel = require('gulp-babel');
+const concat = require('gulp-concat');
+const uglify = require('gulp-uglify');
+const pump = require('pump');
 
 // Создаем таск для сборки html файлов
 gulp.task('html', () => {
@@ -53,6 +57,23 @@ gulp.task('css', () => {
     }));
 });
 
+gulp.task('js', (cb) => {
+  //Добавляем Uglify
+  pump([
+      gulp.src('./src/js/**/*.*')
+      // Добавляем транспайлер Babel
+      .pipe(babel({
+        presets: ['env']
+      }))
+      // Добавляем конкатенацию gulp-concat
+      .pipe(concat('all.js')),
+      uglify(),
+      gulp.dest('./dist/js')
+    ],
+    cb
+  );
+});
+
 // Создаем таск для оптимизации картинок
 gulp.task('img', () => {
   // Берем все картинки из папки img
@@ -93,6 +114,8 @@ gulp.task('watch', () => {
   gulp.watch('./src/images/**/*.*', ['img']);
   // Следим за изменениями в шрифтах и вызываем таск 'fonts' на каждом изменении
   gulp.watch('./src/fonts/**/*.*', ['fonts']);
+  // Следим за изменениями в файлах js и вызываем таск 'js' и 'html' на каждом изменении
+  gulp.watch('./src/js/**/*.js', ['js', 'html']);
 });
 
 // Таск создания и запуска веб-сервера
@@ -113,7 +136,7 @@ gulp.task('del:dist', () => {
 });
 
 // Таск который 1 раз собирает все статические файлы
-gulp.task('build', ['html', 'css', 'img', 'fonts']);
+gulp.task('build', ['html', 'css', 'js', 'img', 'fonts']);
 
 // Главный таск, сначала удаляет папку dist,
 // потом собирает статику, после чего поднимает сервер
